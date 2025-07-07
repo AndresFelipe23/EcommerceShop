@@ -3,11 +3,14 @@ using Ecommerce.PRC.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Ecommerce.API.Models;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Ecommerce.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TallaController : ControllerBase
     {
         private readonly ITallaService _tallaService;
@@ -30,6 +33,7 @@ namespace Ecommerce.API.Controllers
                 // Registrar log de consulta exitosa
                 await _logService.InsertarLogAsync(new Log
                 {
+                    UsuId = GetCurrentUserId(),
                     Tipo = "CONSULTA",
                     Mensaje = "Lista de tallas consultada exitosamente",
                     Origen = "TallaController",
@@ -47,6 +51,7 @@ namespace Ecommerce.API.Controllers
                 // Registrar log de error
                 await _logService.InsertarLogAsync(new Log
                 {
+                    UsuId = GetCurrentUserId(),
                     Tipo = "ERROR",
                     Mensaje = $"Error al consultar tallas: {ex.Message}",
                     Origen = "TallaController",
@@ -72,6 +77,7 @@ namespace Ecommerce.API.Controllers
                     // Registrar log de no encontrado
                     await _logService.InsertarLogAsync(new Log
                     {
+                        UsuId = GetCurrentUserId(),
                         Tipo = "NO_ENCONTRADO",
                         Mensaje = $"Talla con ID {id} no encontrada",
                         Origen = "TallaController",
@@ -88,6 +94,7 @@ namespace Ecommerce.API.Controllers
                 // Registrar log de consulta exitosa
                 await _logService.InsertarLogAsync(new Log
                 {
+                    UsuId = GetCurrentUserId(),
                     Tipo = "CONSULTA",
                     Mensaje = $"Talla con ID {id} consultada exitosamente",
                     Origen = "TallaController",
@@ -106,6 +113,7 @@ namespace Ecommerce.API.Controllers
                 // Registrar log de error
                 await _logService.InsertarLogAsync(new Log
                 {
+                    UsuId = GetCurrentUserId(),
                     Tipo = "ERROR",
                     Mensaje = $"Error al consultar talla con ID {id}: {ex.Message}",
                     Origen = "TallaController",
@@ -282,6 +290,7 @@ namespace Ecommerce.API.Controllers
                 // Registrar log de actualización exitosa
                 await _logService.InsertarLogAsync(new Log
                 {
+                    UsuId = GetCurrentUserId(),
                     Tipo = "ACTUALIZACION",
                     Mensaje = $"Talla con ID {id} actualizada exitosamente",
                     Origen = "TallaController",
@@ -341,6 +350,7 @@ namespace Ecommerce.API.Controllers
                 // Registrar log de eliminación exitosa
                 await _logService.InsertarLogAsync(new Log
                 {
+                    UsuId = GetCurrentUserId(),
                     Tipo = "ELIMINACION",
                     Mensaje = $"Talla con ID {id} eliminada exitosamente",
                     Origen = "TallaController",
@@ -370,6 +380,16 @@ namespace Ecommerce.API.Controllers
 
                 return StatusCode(500, "Error interno del servidor");
             }
+        }
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return userId;
+            }
+            return null;
         }
     }
 } 

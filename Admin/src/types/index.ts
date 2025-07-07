@@ -23,7 +23,7 @@ export interface Categoria {
 }
 
 export interface Talla {
-  TallaId: number;
+  tallaId: number;
   talNombre: string;
   talGenero: string;
   talOrdenVisualizacion?: number | null;

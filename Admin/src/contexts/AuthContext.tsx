@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Usuario, LoginRequest } from '../types/auth';
 import { apiService } from '../services/api';
+import { config } from '../config';
 
 interface AuthContextType {
   usuario: Usuario | null;
@@ -30,16 +31,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Verificar si hay un usuario guardado en localStorage
-    const savedUsuario = localStorage.getItem('usuario');
-    const token = localStorage.getItem('token');
+    const savedUsuario = localStorage.getItem(config.auth.userKey);
+    const token = localStorage.getItem(config.auth.tokenKey);
     
     if (savedUsuario && token) {
       try {
         setUsuario(JSON.parse(savedUsuario));
       } catch (error) {
         console.error('Error al parsear usuario guardado:', error);
-        localStorage.removeItem('usuario');
-        localStorage.removeItem('token');
+        localStorage.removeItem(config.auth.userKey);
+        localStorage.removeItem(config.auth.tokenKey);
       }
     }
     
@@ -57,8 +58,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Guardar token y usuario en localStorage
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('usuario', JSON.stringify(response.usuario));
+      localStorage.setItem(config.auth.tokenKey, response.token);
+      localStorage.setItem(config.auth.userKey, JSON.stringify(response.usuario));
       
       setUsuario(response.usuario);
     } catch (error) {
@@ -76,8 +77,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error en logout:', error);
     } finally {
       setUsuario(null);
-      localStorage.removeItem('token');
-      localStorage.removeItem('usuario');
+      localStorage.removeItem(config.auth.tokenKey);
+      localStorage.removeItem(config.auth.userKey);
     }
   };
 

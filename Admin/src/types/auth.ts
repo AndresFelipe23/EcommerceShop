@@ -20,4 +20,21 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string;
   usuario: Usuario;
+}
+
+// Tipo para la respuesta del backend
+export interface LoginRespuestaDTO {
+  exito: boolean;
+  mensaje: string;
+  token?: string;
+  refreshToken?: string;
+  usuario?: {
+    usuId: number;
+    usuNombre: string;
+    usuApellido: string;
+    usuEmail: string;
+    usuEstadoCuenta?: string;
+    usuFechaRegistro?: string;
+    nombreCompleto: string;
+  };
 } 

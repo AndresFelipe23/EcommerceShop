@@ -1,8 +1,10 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosResponse } from 'axios';
+import { config } from '../config';
 import type { 
   LoginRequest, 
   LoginResponse, 
+  LoginRespuestaDTO,
   Usuario
 } from '../types/auth';
 import type { 
@@ -20,7 +22,7 @@ import type {
 
 class ApiService {
   private api: AxiosInstance;
-  private baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5268/api'; // URL de tu API
+  private baseURL = config.apiUrl; // URL de tu API
 
   constructor() {
     this.api = axios.create({
@@ -32,12 +34,12 @@ class ApiService {
 
     // Interceptor para agregar el token de autenticación
     this.api.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('token');
+      (requestConfig) => {
+        const token = localStorage.getItem(config.auth.tokenKey);
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          requestConfig.headers.Authorization = `Bearer ${token}`;
         }
-        return config;
+        return requestConfig;
       },
       (error) => {
         return Promise.reject(error);
@@ -49,8 +51,8 @@ class ApiService {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('usuario');
+          localStorage.removeItem(config.auth.tokenKey);
+          localStorage.removeItem(config.auth.userKey);
           window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -60,14 +62,87 @@ class ApiService {
 
   // Autenticación
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response: AxiosResponse<ApiResponse<LoginResponse>> = await this.api.post('/Auth/login', credentials);
-    return response.data.data!;
+    try {
+      console.log('Intentando conectar a:', this.baseURL);
+      console.log('Credenciales:', { email: credentials.email, password: '***' });
+      
+      const response: AxiosResponse<LoginRespuestaDTO> = await this.api.post('/Auth/login', credentials);
+      
+      console.log('Respuesta completa del servidor:', response.data);
+      console.log('Token:', response.data.token);
+      console.log('Usuario:', response.data.usuario);
+      console.log('Exito:', response.data.exito);
+      console.log('Mensaje:', response.data.mensaje);
+      
+      // Verificar que la respuesta sea exitosa
+      if (!response.data.exito) {
+        throw new Error(response.data.mensaje || 'Error en la autenticación');
+      }
+      
+      // Verificar que tengamos token y usuario
+      if (!response.data.token) {
+        throw new Error('No se recibió el token de autenticación');
+      }
+      
+      if (!response.data.usuario) {
+        throw new Error('No se recibió la información del usuario');
+      }
+      
+      // Mapear la respuesta del backend al formato esperado por el frontend
+      const loginResponse: LoginResponse = {
+        token: response.data.token,
+        usuario: {
+          id: response.data.usuario.usuId,
+          nombre: response.data.usuario.usuNombre,
+          apellido: response.data.usuario.usuApellido,
+          email: response.data.usuario.usuEmail,
+          telefono: undefined,
+          fechaNacimiento: undefined,
+          activo: response.data.usuario.usuEstadoCuenta === 'Activo',
+          fechaCreacion: response.data.usuario.usuFechaRegistro || new Date().toISOString(),
+          fechaActualizacion: undefined
+        }
+      };
+      
+      console.log('Respuesta mapeada:', loginResponse);
+      return loginResponse;
+    } catch (error: any) {
+      console.error('Error detallado en login:', error);
+      
+      // Manejar errores de conexión
+      if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        throw new Error('No se puede conectar al servidor. Verifique que el backend esté ejecutándose en http://localhost:5268');
+      }
+      
+      // Manejar errores de respuesta HTTP
+      if (error.response) {
+        console.error('Respuesta del servidor:', error.response.data);
+        console.error('Status:', error.response.status);
+        
+        if (error.response.status === 404) {
+          throw new Error('Endpoint no encontrado. Verifique que la API esté disponible');
+        } else if (error.response.status === 500) {
+          throw new Error('Error interno del servidor');
+        } else if (error.response.status === 401) {
+          throw new Error('Credenciales inválidas');
+        } else {
+          throw new Error(`Error del servidor: ${error.response.status} - ${error.response.data?.mensaje || error.response.statusText}`);
+        }
+      }
+      
+      // Manejar errores de timeout
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Tiempo de espera agotado. Verifique la conexión al servidor');
+      }
+      
+      throw error;
+    }
   }
 
   async logout(): Promise<void> {
     await this.api.post('/Auth/logout');
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
+    localStorage.removeItem(config.auth.tokenKey);
+    localStorage.removeItem(config.auth.userKey);
   }
 
   // Usuarios
@@ -155,6 +230,14 @@ class ApiService {
     try {
       const response: AxiosResponse<Talla[]> = await this.api.get('/Talla');
       console.log('Respuesta del servidor para tallas:', response.data);
+      console.log('Primera talla (si existe):', response.data[0]);
+      console.log('Estructura de la primera talla:', response.data[0] ? Object.keys(response.data[0]) : 'No hay tallas');
+      console.log('Valores de la primera talla:', response.data[0] ? {
+        tallaId: response.data[0].tallaId,
+        talNombre: response.data[0].talNombre,
+        talGenero: response.data[0].talGenero,
+        talOrdenVisualizacion: response.data[0].talOrdenVisualizacion
+      } : 'No hay tallas');
       return response.data || [];
     } catch (error) {
       console.error('Error detallado al obtener tallas:', error);
