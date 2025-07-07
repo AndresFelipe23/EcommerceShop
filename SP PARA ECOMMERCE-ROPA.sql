@@ -671,6 +671,24 @@ BEGIN
 END;
 GO
 
+-- SP: Tallas_ListPorId
+-- Obtener una talla específica por ID
+CREATE PROCEDURE Tallas_ListPorId
+    @TallaId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    SELECT 
+        TallaId,
+        TalNombre,
+        TalGenero,
+        TalOrdenVisualizacion
+    FROM Talla
+    WHERE TallaId = @TallaId;
+END
+GO
+
 -- ========================================
 -- SP: Tallas_Update
 -- ========================================

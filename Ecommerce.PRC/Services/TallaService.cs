@@ -16,8 +16,21 @@ namespace Ecommerce.PRC.Servicios
         public Task<IEnumerable<Talla>> ListarTallasAsync()
             => _tallaRepository.ListarTallasAsync();
 
-        public Task<Talla?> ObtenerPorIdAsync(int id)
-            => _tallaRepository.ObtenerPorIdAsync(id);
+        public async Task<Talla?> ObtenerPorIdAsync(int id)
+        {
+            try
+            {
+                Console.WriteLine($"TallaService: Intentando obtener talla con ID {id}");
+                var result = await _tallaRepository.ObtenerPorIdAsync(id);
+                Console.WriteLine($"TallaService: Resultado obtenido: {result?.TallaId ?? -1}");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"TallaService: Error al obtener talla con ID {id}: {ex.Message}");
+                throw;
+            }
+        }
 
         public Task<int> InsertarTallaAsync(Talla talla)
             => _tallaRepository.InsertarTallaAsync(talla);
